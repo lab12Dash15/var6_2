@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Компьютерные комплектующие</title>
+    <style>
+        .table_comp {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table_comp th, .table_comp td {
+            border: 1px solid #dddddd;
+            padding: 8px;
+        }
+
+        .table_comp th {
+            background-color: #f2f2f2;
+        }
+
+        .table_comp__row-header {
+            background-color: #e0e0e0;
+        }
+
+        .remove, .modify {
+            text-align: center;
+        }
+    </style>
+    <script>
+        function enterEditMode(row) {
+            var cells = row.getElementsByTagName('td');
+            for (var i = 1; i < cells.length - 2; i++) {
+                var content = cells[i].innerText;
+                var input = document.createElement('input');
+                input.value = content;
+                cells[i].innerHTML = '';
+                cells[i].appendChild(input);
+            }
+            var updateButton = document.createElement('button');
+            updateButton.innerText = 'Update';
+            updateButton.onclick = function () {
+                updateRow(row);
+            };
+            cells[cells.length - 2].innerHTML = '';
+            cells[cells.length - 2].appendChild(updateButton);
+
+            var cancelButton = document.createElement('button');
+            cancelButton.innerText = 'Cancel';
+            cancelButton.onclick = function () {
+                cancelEdit(row);
+            };
+            cells[cells.length - 1].innerHTML = '';
+            cells[cells.length - 1].appendChild(cancelButton);
+        }
+
+        function updateRow(row) {
+            var cells = row.getElementsByTagName('td');
+            var updatedData = {
+                id: cells[0].getElementsByTagName('input')[0].value,
+                category: cells[1].getElementsByTagName('input')[0].value,
+                name: cells[2].getElementsByTagName('input')[0].value,
+                price: cells[3].getElementsByTagName('input')[0].value,
+                present: cells[4].getElementsByTagName('input')[0].checked
+            };
+
+            fetch('/update', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updatedData)
+            }).then(function (response) {
+                return response.json();
+            }).then(function (data) {
+                location.reload();
+            });
+        }
+
+        function cancelEdit(row) {
+            location.href = '/';
+        }
+    </script>
+
+</head>
+<body>
+<form method="GET" action="/">
+    <label for="sort">Sort:</label>
+    <select name="sort" id="sort">
+        {% for el in sort %}
+            <option value="{{ el.name }}"
+                    {% if filter_selected.sort == el.name.lower() %}
+                    selected
+                    {% endif %}
+            >{{ el.value }}
+            </option>
+        {% endfor %}
+    </select>
+    <select name="desc_asc" id="sort">
+        <option value="desc"
+                {% if filter_selected.desc_asc == 'desc' %}
+                selected
+                {% endif %}
+        >По убыванию
+        </option>
+        <option value="asc"
+                {% if filter_selected.desc_asc == 'asc' %}
+                selected
+                {% endif %}
+        >По возрастанию
+        </option>
+    </select>
+    <label for="min_price">Min Price:</label>
+    <input type="checkbox" name="min_price" id="min_price"
+            {% if filter_selected.min_price is string %}
+           checked
+            {% endif %}
+    >
+    <label for="max_price">Max Price:</label>
+    <input type="checkbox" name="max_price" id="max_price"
+            {% if filter_selected.max_price is string %}
+           checked
+            {% endif %}
+    >
+    <button type="submit">Filter</button>
+</form>
+
+<form method="POST" action="/add">
+    <label for="category">Category:</label>
+    <input type="text" name="category" id="category" required>
+    <label for="name">Name:</label>
+    <input type="text" name="name" id="name" required>
+    <label for="price">Price:</label>
+    <input type="number" name="price" id="price" required>
+    <label for="present">Present:</label>
+    <input type="checkbox" name="present" id="present">
+    <button type="submit">Add Product</button>
+</form>
+
+<table class="table_comp">
+    <tr class="table_comp__row-header">
+        <th class="table_comp__column_id-header">Id</th>
+        <th class="table_comp__column_category-header">category</th>
+        <th class="table_comp__column_name-header">Название</th>
+        <th class="table_comp__column_price-header">Цена</th>
+        <th class="table_comp__column_present-header">В наличии</th>
+        <th class="remove">Remove</th>
+        <th class="modify">Modify</th>
+    </tr>
+    {% for el in list %}
+        <tr ondblclick="enterEditMode(this)" class="table_comp__row">
+            <td class="table_comp__column_id">{{ el["id"] }}</td>
+            <td class="table_comp__column_category">{{ el["category"] }}</td>
+            <td class="table_comp__column_name">{{ el["name"] }}</td>
+            <td class="table_comp__column_price">{{ el["price"] }}</td>
+            <td class="table_comp__column_present">{{ el["present"] }}</td>
+            <td class="func1"><a href="/remove?id={{ el['id'] }}">🗑️</a></td>
+            <td class="func2" onclick="enterEditMode(this)">📝</td>
+        </tr>
+    {% endfor %}
+</table>
+</body>
+</html>
